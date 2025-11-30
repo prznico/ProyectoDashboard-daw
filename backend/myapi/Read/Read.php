@@ -1,4 +1,4 @@
-<?php  
+<?php
     namespace MyAPI\Read;
     use MyAPI\DataBase as DataBase;
     require_once __DIR__ . '/../DataBase.php';
@@ -9,21 +9,15 @@
             parent::__construct($db);
         }
 
-        
         public function listProduct(){
-            // SE CREA EL ARREGLO QUE SE VA A DEVOLVER EN FORMA DE JSON
             $data = array();
-
-            // SE REALIZA LA QUERY DE BÚSQUEDA Y AL MISMO TIEMPO SE VALIDA SI HUBO RESULTADOS
-            if ( $result = $this->conexion->query("SELECT * FROM productos WHERE eliminado = 0") ) {
-                // SE OBTIENEN LOS RESULTADOS
+            $sql = "SELECT id, nombre, autor, departamento, empresa_institucion, fecha_creacion, descripcion, nombre_archivo, tipo_archivo, url_archivo, `tamaño_mb`, created_at, updated_at FROM recursos WHERE eliminado = 0";
+            if ($result = $this->conexion->query($sql)) {
                 $rows = $result->fetch_all(MYSQLI_ASSOC);
-
-                if(!is_null($rows)) {
-                    // SE CODIFICAN A UTF-8 LOS DATOS Y SE MAPEAN AL ARREGLO DE RESPUESTA
-                    foreach($rows as $num => $row) {
-                        foreach($row as $key => $value) {
-                            $data[$num][$key] = utf8_encode($value);
+                if (!is_null($rows)) {
+                    foreach ($rows as $num => $row) {
+                        foreach ($row as $key => $value) {
+                            $data[$num][$key] = is_string($value) ? utf8_encode($value) : $value;
                         }
                     }
                 }
@@ -37,94 +31,107 @@
 
         public function search($producto){
             $data = array();
-            // SE VERIFICA HABER RECIBIDO EL ID
-            if( isset($producto['search']) ) {
+            if (isset($producto['search'])) {
                 $search = $producto['search'];
-                // SE REALIZA LA QUERY DE BÚSQUEDA Y AL MISMO TIEMPO SE VALIDA SI HUBO RESULTADOS
-                $sql = "SELECT * FROM productos WHERE (id = '{$search}' OR nombre LIKE '%{$search}%' OR marca LIKE '%{$search}%' OR detalles LIKE '%{$search}%') AND eliminado = 0";
-                if ( $result = $this->conexion->query($sql) ) {
-                    // SE OBTIENEN LOS RESULTADOS
-                    $rows = $result->fetch_all(MYSQLI_ASSOC);
-
-                    if(!is_null($rows)) {
-                        // SE CODIFICAN A UTF-8 LOS DATOS Y SE MAPEAN AL ARREGLO DE RESPUESTA
-                        foreach($rows as $num => $row) {
-                            foreach($row as $key => $value) {
-                                $data[$num][$key] = utf8_encode($value);
+                $sql = "SELECT id, nombre, autor, departamento, empresa_institucion, fecha_creacion, descripcion, nombre_archivo, tipo_archivo, url_archivo, `tamaño_mb`, created_at, updated_at FROM recursos WHERE (id = ? OR nombre LIKE ? OR autor LIKE ? OR descripcion LIKE ?) AND eliminado = 0";
+                $stmt = $this->conexion->prepare($sql);
+                if ($stmt) {
+                    $like = "%{$search}%";
+                    $stmt->bind_param('isss', $search, $like, $like, $like);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    if ($result) {
+                        $rows = $result->fetch_all(MYSQLI_ASSOC);
+                        if (!is_null($rows)) {
+                            foreach ($rows as $num => $row) {
+                                foreach ($row as $key => $value) {
+                                    $data[$num][$key] = is_string($value) ? utf8_encode($value) : $value;
+                                }
                             }
                         }
+                        $result->free();
                     }
-                    $result->free();
+                    $stmt->close();
                 } else {
                     die('Query Error: '.mysqli_error($this->conexion));
                 }
                 $this->conexion->close();
             }
-            // SE HACE LA CONVERSIÓN DE ARRAY A JSON
             $this->data = json_encode($data, JSON_PRETTY_PRINT);
         }
 
         public function single($producto){
-            $id = $producto['id'];
-            $sql = "SELECT * FROM productos WHERE id = $id";
-            $result = $this->conexion -> query( $sql);
-            if (!$result){
-                die('Query failed');
+            if (!isset($producto['id'])) {
+                $this->data = json_encode(['status' => 'error', 'message' => 'ID no proporcionado'], JSON_PRETTY_PRINT);
+                return;
             }
-
-            $json = array();
-            while($row = mysqli_fetch_array($result)) {
-                // SE CONVIERTE A JSON
-                $json[] = array(
-                    'id' => $id,
-                    'nombre' => $row['nombre'],
-                    'precio' => $row['precio'],
-                    'unidades' => $row['unidades'],
-                    'modelo' => $row['modelo'],
-                    'marca' => $row['marca'],
-                    'detalles' => $row['detalles'],
-                    'imagen' => $row['imagen']
-                );
+            $id = intval($producto['id']);
+            $sql = "SELECT id, nombre, autor, departamento, empresa_institucion, fecha_creacion, descripcion, nombre_archivo, tipo_archivo, url_archivo, `tamaño_mb`, created_at, updated_at FROM recursos WHERE id = ? LIMIT 1";
+            $stmt = $this->conexion->prepare($sql);
+            if (!$stmt) {
+                die('Query failed: ' . mysqli_error($this->conexion));
             }
-            
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            if (!$row) {
+                $this->data = json_encode(['status' => 'error', 'message' => 'Recurso no encontrado'], JSON_PRETTY_PRINT);
+                $stmt->close();
+                $this->conexion->close();
+                return;
+            }
+            $json = array(
+                'id' => $row['id'],
+                'nombre' => $row['nombre'],
+                'autor' => $row['autor'],
+                'departamento' => $row['departamento'],
+                'empresa_institucion' => $row['empresa_institucion'],
+                'fecha_creacion' => $row['fecha_creacion'],
+                'descripcion' => $row['descripcion'],
+                'nombre_archivo' => $row['nombre_archivo'],
+                'tipo_archivo' => $row['tipo_archivo'],
+                'url_archivo' => $row['url_archivo'],
+                'tamanio_mb' => $row['tamaño_mb'] ?? $row['tamano_mb'] ?? null,
+                'created_at' => $row['created_at'],
+                'updated_at' => $row['updated_at']
+            );
             $result->free();
+            $stmt->close();
             $this->conexion->close();
-
-            // SE HACE LA CONVERSIÓN DE ARRAY A JSON
-            $this->data=json_encode($json[0], JSON_PRETTY_PRINT);
+            $this->data = json_encode($json, JSON_PRETTY_PRINT);
         }
 
         public function singleByName($producto){
             $data = array();
-            // SE VERIFICA HABER RECIBIDO EL ID
-            if( isset($producto['name']) ) {
+            if (isset($producto['name'])) {
                 $search = $producto['name'];
-                // SE REALIZA LA QUERY DE BÚSQUEDA Y AL MISMO TIEMPO SE VALIDA SI HUBO RESULTADOS
-                $sql = "SELECT * FROM productos WHERE nombre = '{$search}' AND eliminado = 0";
-                if ( $result = $this->conexion->query($sql) ) {
-                    // SE OBTIENEN LOS RESULTADOS
-                    $rows = $result->fetch_all(MYSQLI_ASSOC);
-        
-                    if(!is_null($rows)) {
-                        // SE CODIFICAN A UTF-8 LOS DATOS Y SE MAPEAN AL ARREGLO DE RESPUESTA
-                        foreach($rows as $num => $row) {
-                            foreach($row as $key => $value) {
-                                $data[$num][$key] = utf8_encode($value);
+                $sql = "SELECT id, nombre, autor, departamento, empresa_institucion, fecha_creacion, descripcion, nombre_archivo, tipo_archivo, url_archivo, `tamaño_mb`, created_at, updated_at FROM recursos WHERE nombre = ? AND eliminado = 0";
+                $stmt = $this->conexion->prepare($sql);
+                if ($stmt) {
+                    $stmt->bind_param('s', $search);
+                    $stmt->execute();
+                    $result = $stmt->get_result();
+                    if ($result) {
+                        $rows = $result->fetch_all(MYSQLI_ASSOC);
+                        if (!is_null($rows)) {
+                            foreach ($rows as $num => $row) {
+                                foreach ($row as $key => $value) {
+                                    $data[$num][$key] = is_string($value) ? utf8_encode($value) : $value;
+                                }
                             }
                         }
+                        $result->free();
                     }
-                    $result->free();
+                    $stmt->close();
                 } else {
                     die('Query Error: '.mysqli_error($this->conexion));
                 }
                 $this->conexion->close();
-            } 
-            
-            // SE HACE LA CONVERSIÓN DE ARRAY A JSON
+            }
             $this->data = json_encode($data, JSON_PRETTY_PRINT);
         }
 
-      
 
     }
 ?>
