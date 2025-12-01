@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gestión de Recursos Digitales</title>
+    <link rel="stylesheet" href="https://bootswatch.com/4/superhero/bootstrap.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <style>
+      .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 20px;
+      }
+      .status-message {
+        font-size: 0.8rem;
+        margin-top: 5px;
+        display: none;
+      }
+      .status-success {
+        color: #28a745;
+      }
+      .status-error {
+        color: #dc3545;
+      }
+      .is-invalid {
+        border-color: #dc3545;
+      }
+      .is-valid {
+        border-color: #28a745;
+      }
+    </style>
+</head>
+<body onload="init()">
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href=".">📊 ResourceHub Dashboard</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <span class="navbar-text mr-3" id="user-info">Usuario: <strong>-</strong></span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link btn btn-sm btn-danger" href="#" id="btn-logout">Cerrar Sesión</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="container-fluid">
+      <div class="row p-4">
+        <!-- FORMULARIO DE RECURSOS -->
+        <div class="col-md-4">
+          <div class="card">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">Agregar/Editar Recurso</h5>
+            </div>
+            <div class="card-body">
+              <form id="resource-form">
+                <div class="form-group">
+                  <label for="nombre">Nombre del Recurso *</label>
+                  <input class="form-control" type="text" id="nombre" name="nombre" placeholder="Ej: Manual de Usuario" required>
+                  <div id="nombre-status" class="status-message"></div>
+                </div>
+
+                <div class="form-group">
+                  <label for="autor">Autor *</label>
+                  <input class="form-control" type="text" id="autor" name="autor" placeholder="Ej: John Doe" required>
+                  <div id="autor-status" class="status-message"></div>
+                </div>
+
+                <div class="form-group">
+                  <label for="departamento">Departamento</label>
+                  <input class="form-control" type="text" id="departamento" name="departamento" placeholder="Ej: IT">
+                  <div id="departamento-status" class="status-message"></div>
+                </div>
+
+                <div class="form-group">
+                  <label for="empresa">Empresa/Institución</label>
+                  <input class="form-control" type="text" id="empresa" name="empresa" placeholder="Ej: TechCorp">
+                  <div id="empresa-status" class="status-message"></div>
+                </div>
+
+                <div class="form-group">
+                  <label for="fecha_creacion">Fecha de Creación *</label>
+                  <input class="form-control" type="date" id="fecha_creacion" name="fecha_creacion" required>
+                  <div id="fecha_creacion-status" class="status-message"></div>
+                </div>
+
+                <div class="form-group">
+                  <label for="descripcion">Descripción (máx 250 caracteres)</label>
+                  <textarea class="form-control" id="descripcion" name="descripcion" placeholder="Describe el recurso..." rows="3" maxlength="250"></textarea>
+                  <div id="descripcion-status" class="status-message"></div>
+                </div>
+
+                <div class="form-group">
+                  <label for="archivo">Archivo *</label>
+                  <input class="form-control-file" type="file" id="archivo" name="archivo" required>
+                  <small class="form-text text-muted">Tipos permitidos: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ZIP, RAR, TXT</small>
+                  <div id="archivo-status" class="status-message"></div>
+                </div>
+
+                <input type="hidden" id="resourceId">
+                <button class="btn btn-primary btn-block" type="submit" id="submit-btn">Agregar Recurso</button>
+                <button class="btn btn-secondary btn-block mt-2 d-none" type="button" id="btn-cancel">Cancelar Edición</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- TABLA Y GRÁFICAS -->
+        <div class="col-md-8">
+          <!-- TABLA DE RECURSOS -->
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <h5 class="mb-0">Listado de Recursos</h5>
+            </div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Nombre</th>
+                      <th>Autor</th>
+                      <th>Tipo</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resources-tbody">
+                    <tr><td colspan="5" class="text-center text-muted">Cargando...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- GRÁFICAS DE ESTADÍSTICAS -->
+          <div class="row">
+            <div class="col-md-12">
+              <h4 class="mb-3">📊 Estadísticas de Descargas</h4>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header bg-info text-white">
+                  Descargas por Tipo de Archivo
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <canvas id="chart-type"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header bg-info text-white">
+                  Descargas por Día de la Semana
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <canvas id="chart-day"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-12 mt-4">
+              <div class="card">
+                <div class="card-header bg-info text-white">
+                  Descargas por Hora del Día
+                </div>
+                <div class="card-body">
+                  <div class="chart-container" style="height: 350px;">
+                    <canvas id="chart-hour"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="js/dashboard.js"></script>
+    <script src="js/charts.js"></script>
+</body>
+</html>

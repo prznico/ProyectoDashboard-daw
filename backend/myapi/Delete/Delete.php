@@ -15,22 +15,26 @@
             );
             // SE VERIFICA HABER RECIBIDO EL ID
             if( isset($producto['id']) ) {
-                $id = $producto['id'];
-                // SE REALIZA LA QUERY DE BÚSQUEDA Y AL MISMO TIEMPO SE VALIDA SI HUBO RESULTADOS
-                $sql = "UPDATE productos SET eliminado=1 WHERE id = {$id}";
-                if ( $this->conexion->query($sql) ) {
-                    $data['status'] =  "success";
-                    $data['message'] =  "Producto eliminado";
+                $id = intval($producto['id']);
+                $stmt = $this->conexion->prepare('UPDATE recursos SET eliminado = 1, updated_at = NOW() WHERE id = ?');
+                if ($stmt) {
+                    $stmt->bind_param('i', $id);
+                    if ($stmt->execute()) {
+                        $data['status'] =  "success";
+                        $data['message'] =  "Recurso eliminado";
+                    } else {
+                        $data['message'] = "ERROR execute: " . $stmt->error;
+                    }
+                    $stmt->close();
                 } else {
-                    $data['message'] = "ERROR: No se ejecuto $sql. " . mysqli_error($this->conexion);
+                    $data['message'] = 'ERROR prepare: ' . $this->conexion->error;
                 }
                 $this->conexion->close();
-            } 
+            }
             
             // SE HACE LA CONVERSIÓN DE ARRAY A JSON
             $this->data = json_encode($data, JSON_PRETTY_PRINT);
         }
-        
 
     }
 
