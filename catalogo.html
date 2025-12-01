@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Catálogo de Recursos - ResourceHub</title>
+    <link rel="stylesheet" href="https://bootswatch.com/4/superhero/bootstrap.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+      .resource-card {
+        transition: transform 0.2s;
+        margin-bottom: 20px;
+      }
+      .resource-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 8px rgba(255, 255, 255, 0.1);
+      }
+      .file-icon {
+        font-size: 2rem;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .resource-meta {
+        font-size: 0.85rem;
+        color: #adb5bd;
+      }
+      .btn-group-vertical {
+        width: 100%;
+      }
+      .badge-custom {
+        padding: 5px 10px;
+        font-size: 0.75rem;
+      }
+      .search-section {
+        background: linear-gradient(135deg, #375a7f 0%, #1e3a5f 100%);
+        padding: 30px;
+        margin-bottom: 30px;
+        border-radius: 5px;
+      }
+      .hero-text {
+        color: white;
+        margin-bottom: 20px;
+      }
+      .status-filter {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+    </style>
+</head>
+<body onload="init()">
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand" href=".">📚 ResourceHub</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ml-auto">
+          <li class="nav-item">
+            <span class="navbar-text mr-3" id="user-info">Visitante</span>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link btn btn-sm btn-primary" href="login.html">Login</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- SECCIÓN DE BÚSQUEDA Y FILTROS -->
+    <div class="search-section">
+      <div class="container">
+        <h1 class="hero-text mb-0">📖 Catálogo de Recursos Digitales</h1>
+        <p class="hero-text text-muted">Busca y descarga los recursos que necesitas</p>
+        <div class="row">
+          <div class="col-md-8">
+            <div class="input-group input-group-lg">
+              <input class="form-control" type="text" id="search-input" placeholder="Buscar por nombre, autor o descripción...">
+              <div class="input-group-append">
+                <button class="btn btn-primary" type="button" id="btn-search">Buscar</button>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 text-right">
+            <button class="btn btn-outline-light" type="button" id="btn-reset">Limpiar Búsqueda</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- FILTROS -->
+      <div class="status-filter">
+        <span class="badge badge-secondary">Total de recursos: <strong id="total-count">0</strong></span>
+        <span class="badge badge-info">Tipo: <strong id="type-filter">Todos</strong></span>
+        <span class="badge badge-success">Descargas: <strong id="download-filter">-</strong></span>
+      </div>
+
+      <!-- GRID DE RECURSOS -->
+      <div class="row" id="resources-grid">
+        <div class="col-12 text-center text-muted py-5">
+          <p>Cargando recursos...</p>
+        </div>
+      </div>
+
+      <!-- PAGINACIÓN (OPCIONAL) -->
+      <nav aria-label="Paginación" class="mt-5 mb-5">
+        <ul class="pagination justify-content-center" id="pagination">
+          <!-- Generado por JS -->
+        </ul>
+      </nav>
+    </div>
+
+    <!-- MODAL PARA VER DETALLES -->
+    <div class="modal fade" id="modal-resource" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title" id="modal-title">Detalles del Recurso</h5>
+            <button type="button" class="close text-white" data-dismiss="modal">
+              <span>&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <p><strong>Nombre:</strong> <span id="modal-nombre">-</span></p>
+              <p><strong>Autor:</strong> <span id="modal-autor">-</span></p>
+              <p><strong>Departamento:</strong> <span id="modal-departamento">-</span></p>
+              <p><strong>Empresa/Institución:</strong> <span id="modal-empresa">-</span></p>
+              <p><strong>Fecha de Creación:</strong> <span id="modal-fecha">-</span></p>
+              <p><strong>Tipo de Archivo:</strong> <span id="modal-tipo">-</span></p>
+              <p><strong>Tamaño:</strong> <span id="modal-tamanio">-</span> MB</p>
+              <p><strong>Descripción:</strong></p>
+              <p id="modal-descripcion">-</p>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            <button type="button" class="btn btn-primary" id="modal-download-btn">Descargar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-dark py-4 mt-5 text-center text-muted">
+      <div class="container">
+        <p>&copy; 2025 ResourceHub - Gestión de Recursos Digitales. Todos los derechos reservados.</p>
+      </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    <script src="js/catalogo.js"></script>
+</body>
+</html>
