@@ -274,3 +274,5 @@ proyecto_daw/
 
 Para reportar errores o sugerencias, contacta al equipo de desarrollo.
 
+# ProyectoDashboard-daw
+Dashboardpara la gestión de recursos digitales (archivos de soporte para programadores)
