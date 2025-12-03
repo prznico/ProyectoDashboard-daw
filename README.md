@@ -269,10 +269,3 @@ proyecto_daw/
 ### Sesión expira rápidamente
 - Aumenta `session.gc_maxlifetime` en `php.ini`
 - Valor recomendado: 86400 (24 horas)
-
-## 📧 Contacto y Soporte
-
-Para reportar errores o sugerencias, contacta al equipo de desarrollo.
-
-# ProyectoDashboard-daw
-Dashboardpara la gestión de recursos digitales (archivos de soporte para programadores)
