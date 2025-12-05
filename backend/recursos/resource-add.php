@@ -36,6 +36,7 @@ if (!isset($_FILES['archivo']) || $_FILES['archivo']['error'] !== UPLOAD_ERR_OK)
 }
 
 $file = $_FILES['archivo'];
+
 if ($file['size'] > MAX_FILE_SIZE) {
     $response['message'] = 'Archivo demasiado grande';
     echo json_encode($response);
@@ -44,6 +45,7 @@ if ($file['size'] > MAX_FILE_SIZE) {
 
 $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 $allowed = ALLOWED_EXTENSIONS;
+
 if (!in_array($ext, $allowed)) {
     $response['message'] = 'Extensión no permitida';
     echo json_encode($response);
@@ -69,20 +71,39 @@ $tipo_archivo = $ext;
 $tamanio_mb = round($file['size'] / 1024 / 1024, 2);
 
 // Insertar registro en la base
-$stmt = $conexion->prepare('INSERT INTO recursos (nombre, autor, departamento, empresa_institucion, fecha_creacion, descripcion, nombre_archivo, tipo_archivo, url_archivo, tamaño_mb, created_at, updated_at, eliminado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0)');
-$stmt->bind_param('ssssssssd', $nombre, $autor, $departamento, $empresa, $fecha_creacion, $descripcion, $storedName, $tipo_archivo, $url_archivo, $tamanio_mb);
+$stmt = $conexion->prepare(
+    'INSERT INTO recursos 
+    (nombre, autor, departamento, empresa_institucion, fecha_creacion, descripcion, nombre_archivo, tipo_archivo, url_archivo, tamaño_mb, created_at, updated_at, eliminado) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), 0)'
+);
+
+// CORRECCIÓN IMPORTANTE: deben ser 10 letras en bind_param, todas cadenas -> "ssssssssss"
+$stmt->bind_param(
+    'ssssssssss',
+    $nombre,
+    $autor,
+    $departamento,
+    $empresa,
+    $fecha_creacion,
+    $descripcion,
+    $storedName,
+    $tipo_archivo,
+    $url_archivo,
+    $tamanio_mb
+);
+
 $ok = $stmt->execute();
+
 if ($ok) {
     $response['status'] = 'success';
     $response['message'] = 'Recurso agregado correctamente';
     $response['id'] = $conexion->insert_id;
 } else {
-    // eliminar archivo guardado si no se insertó
     @unlink($destination);
     $response['message'] = 'Error al insertar recurso: ' . $stmt->error;
 }
+
 $stmt->close();
 
 echo json_encode($response);
-
 ?>
