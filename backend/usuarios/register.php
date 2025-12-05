@@ -9,7 +9,7 @@ if (!$input) $input = $_POST;
 $nombre = trim($input['nombre'] ?? '');
 $email = trim($input['email'] ?? '');
 $password = $input['password'] ?? '';
-$role = $input['rol'] ?? 'visitante';
+$rol = $_POST['rol'];
 
 if ($nombre === '' || $email === '' || $password === '') {
     echo json_encode(['status' => 'error', 'message' => 'Faltan datos requeridos']);
@@ -39,7 +39,7 @@ $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
 // Insertar usuario
 $stmt = $conexion->prepare('INSERT INTO usuarios (nombre, email, contraseña, rol, fecha_registro, activo) VALUES (?, ?, ?, ?, NOW(), 1)');
-$stmt->bind_param('ssss', $nombre, $email, $password_hash, $role);
+$stmt->bind_param('ssss', $nombre, $email, $password_hash, $rol);
 $ok = $stmt->execute();
 $stmt->close();
 
