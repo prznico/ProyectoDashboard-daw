@@ -1,6 +1,14 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+session_start();
 require_once __DIR__ . '/../database.php';
+
+// Validar que el usuario es admin
+if (!isset($_SESSION['usuario_id']) || $_SESSION['usuario_rol'] !== 'admin') {
+    http_response_code(403);
+    echo json_encode(['status'=>'error','message'=>'Acceso denegado. Solo administradores pueden eliminar recursos.']);
+    exit;
+}
 
 $id = intval($_POST['id'] ?? 0);
 if ($id <= 0) {

@@ -191,5 +191,17 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
     <script src="js/dashboard.js"></script>
     <script src="js/charts.js"></script>
+
+    <script>
+    // Verificar sesión al cargar el dashboard
+    $.post('backend/usuarios/validate-session.php', function(data) {
+        if (data.status !== 'success') {
+            window.location.href = 'login.html?redirect=dashboard';
+        }
+    }, 'json').fail(function() {
+        window.location.href = 'login.html';
+    });
+    </script>
+
 </body>
 </html>
